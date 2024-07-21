@@ -2,7 +2,7 @@
 import asyncio
 import aiohttp
 import os
-import zipfile
+import tarfile
 import shutil
 
 from toga import (
@@ -146,9 +146,8 @@ class DownloadMiniZ(Window):
 
     
     async def extract_files(self, destination, data_path):
-        password = "miniZ"
-        with zipfile.ZipFile(destination, 'r') as zip_ref:
-            zip_ref.extractall(data_path, pwd=password.encode())
+        with tarfile.open(destination, 'r:gz') as tar_ref:
+            tar_ref.extractall(path=data_path)
         await asyncio.sleep(1)
         self.download_txt.text = "MiniZ is ready."
         await asyncio.sleep(1)
@@ -324,8 +323,8 @@ class DownloadGminer(Window):
 
     
     async def extract_files(self, destination, data_path):
-        with zipfile.ZipFile(destination, 'r') as zip_ref:
-            zip_ref.extractall(data_path)
+        with tarfile.open(destination, 'r:xz') as tar_ref:
+            tar_ref.extractall(path=data_path)
         await asyncio.sleep(1)
         self.download_txt.text = "Gminer is ready."
         await asyncio.sleep(1)
@@ -336,7 +335,7 @@ class DownloadGminer(Window):
     async def cleanup_after_extraction(self):
         for file in os.listdir(self.miner_dir):
             file_path = os.path.join(self.miner_dir, file)
-            if file != "mine":
+            if file != "miner":
                 os.remove(file_path)
         self.selected_miner.enabled = True
             
@@ -501,8 +500,8 @@ class DownloadLolminer(Window):
 
     
     async def extract_files(self, destination, data_path):
-        with zipfile.ZipFile(destination, 'r') as zip_ref:
-            zip_ref.extractall(data_path)
+        with tarfile.open(destination, 'r:gz') as tar_ref:
+            tar_ref.extractall(path=data_path)
         await asyncio.sleep(1)
         self.download_txt.text = "Lolminer is ready."
         await asyncio.sleep(1)

@@ -68,8 +68,8 @@ class LabelStyle():
 
     mining_output_txt = Pack(
         padding_top = 2,
-        padding_left = 5,
-        font_size = 8,
+        padding_left = 10,
+        font_size = 9,
         color = GREENYELLOW,
         background_color = BLACK
     )

@@ -1,11 +1,11 @@
 
 import os
 import asyncio
-import subprocess
 import psutil
 import re
 import http
 from urllib.parse import urlparse
+from GPUtil import getGPUs
 
 from toga import (
     App,
@@ -27,6 +27,7 @@ from .styles.selection import SelectionStyle
 from .styles.input import InputStyle
 from .styles.button import ButtonStyle
 from .styles.container import ContainerStyle
+from .styles.divider import DividerStyle
 
 from .download import DownloadMiniZ, DownloadGminer, DownloadLolminer
 
@@ -128,7 +129,8 @@ class MiningWindow(Box):
             on_press=self.verify_mining_params
         )
         self.divider = Divider(
-            direction=Direction.HORIZONTAL
+            direction=Direction.HORIZONTAL,
+            style=DividerStyle.divider_miner
         )
         self.mining_output_box = Box(
             style=BoxStyle.mining_output_box
@@ -140,6 +142,9 @@ class MiningWindow(Box):
         
         self.app.add_background_task(
             self.display_window
+        )
+        self.app.add_background_task(
+            self.get_gpu_info
         )
 
     
@@ -179,6 +184,40 @@ class MiningWindow(Box):
         )
         await asyncio.sleep(1)
         self.app.main_window.show()
+
+    
+    def get_gpu_info(self, widget):
+        gpus = getGPUs()
+        print(gpus)
+        gpu_info = []
+        for gpu in gpus:
+            gpu_info.append({
+                'id': gpu.id,
+                'name': gpu.name,
+                'uuid': gpu.uuid,
+                'load': gpu.load,
+                'memory.total': gpu.memoryTotal,
+                'memory.used': gpu.memoryUsed,
+                'memory.free': gpu.memoryFree,
+                'driver': gpu.driver,
+                'temperature': gpu.temperature,
+                'compute': gpu.computeCapability,
+                'fan.speed': gpu.fanSpeed,
+                'display_mode': gpu.display_mode,
+                'display_active': gpu.display_active,
+            })
+            print(f"GPU {gpu['id']}: {gpu['name']}")
+            print(f"    UUID: {gpu['uuid']}")
+            print(f"    Load: {gpu['load']} %")
+            print(f"    Memory Total: {gpu['memory.total']} MB")
+            print(f"    Memory Used: {gpu['memory.used']} MB")
+            print(f"    Memory Free: {gpu['memory.free']} MB")
+            print(f"    Driver: {gpu['driver']}")
+            print(f"    Temperature: {gpu['temperature']} °C")
+            print(f"    Compute Capability: {gpu['compute']}")
+            print(f"    Fan Speed: {gpu['fan.speed']} %")
+            print(f"    Display Mode: {gpu['display_mode']}")
+            print(f"    Display Active: {gpu['display_active']}")
 
 
     async def verify_address(self, input):
@@ -373,8 +412,7 @@ class MiningWindow(Box):
             self.process = await asyncio.create_subprocess_shell(
                 *command,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                creationflags=subprocess.CREATE_NO_WINDOW
+                stderr=asyncio.subprocess.PIPE
             )
             self.mining_button.on_press = self.stop_mining
             self.mining_button.enabled = True

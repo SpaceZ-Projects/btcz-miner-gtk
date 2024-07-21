@@ -18,16 +18,12 @@ class SelectionStyle():
         padding_top = 15,
         padding_left = 25,
         width = 250,
-        font_size = 11,
-        color = YELLOW,
-        background_color = BLACK
+        font_size = 11
     )
 
     select_server = Pack(
         padding_top = 15,
         padding_left = 60,
         width = 200,
-        font_size = 11,
-        color = YELLOW,
-        background_color = BLACK
+        font_size = 11
     )
