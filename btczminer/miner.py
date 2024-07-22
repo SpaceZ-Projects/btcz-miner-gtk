@@ -5,7 +5,7 @@ import psutil
 import re
 import http
 from urllib.parse import urlparse
-from GPUtil import getGPUs
+from .gputil import getGPUs
 
 from toga import (
     App,
@@ -128,6 +128,28 @@ class MiningWindow(Box):
             style=ButtonStyle.mining_button,
             on_press=self.verify_mining_params
         )
+        self.options_box = Box(
+            style=BoxStyle.options_box
+        )
+        self.name_txt = Label(f"GPU : __", style=LabelStyle.gpu_info_txt)
+        self.load_txt = Label(f"Load __ %", style=LabelStyle.gpu_info_txt)
+        self.memory_total_txt = Label(f"Memory Total : __ MB", style=LabelStyle.gpu_info_txt)
+        self.memory_used_txt = Label(f"Memomry Used : __ MB", style=LabelStyle.gpu_info_txt)
+        self.memory_free_txt = Label(f"Memory Free : __ MB", style=LabelStyle.gpu_info_txt)
+        self.driver_txt = Label(f"Driver : __", style=LabelStyle.gpu_info_txt)
+        self.temperature_txt = Label(f"Temperature : __ °C", style=LabelStyle.gpu_info_txt)
+        self.display_active_txt = Label(f"Display : __", style=LabelStyle.gpu_info_txt)
+
+        self.gpuinfo_box = Box(
+            style=BoxStyle.gpuinfo_box
+        )
+        self.params_box = Box(
+            style=BoxStyle.params_box
+        )
+        self.divider_params = Divider(
+            direction=Direction.VERTICAL,
+            style=DividerStyle.divider_params
+        )
         self.divider = Divider(
             direction=Direction.HORIZONTAL,
             style=DividerStyle.divider_miner
@@ -139,12 +161,19 @@ class MiningWindow(Box):
             content=self.mining_output_box,
             style=ContainerStyle.mining_output
         )
-        
-        self.app.add_background_task(
-            self.display_window
+
+        self.gpuinfo_box.add(
+            self.name_txt,
+            self.load_txt,
+            self.memory_total_txt,
+            self.memory_used_txt,
+            self.memory_free_txt,
+            self.driver_txt,
+            self.temperature_txt,
+            self.display_active_txt
         )
         self.app.add_background_task(
-            self.get_gpu_info
+            self.display_window
         )
 
     
@@ -172,52 +201,55 @@ class MiningWindow(Box):
             self.address_txt,
             self.address_input
         )
-        self.add(
+        self.options_box.add(
             self.select_miner_box,
             self.select_pool_box,
             self.select_server_box,
             self.worker_name_box,
             self.address_box,
             self.mining_button,
+        )
+        self.params_box.add(
+            self.options_box,
+            self.divider_params,
+            self.gpuinfo_box
+        )
+        self.add(
+            self.params_box,
             self.divider,
             self.mining_output
         )
-        await asyncio.sleep(1)
+        self.update_gpu_info_task = asyncio.create_task(self.update_gpu_info())
+        await asyncio.sleep(2)
         self.app.main_window.show()
+        await asyncio.gather(
+            self.update_gpu_info_task
+        )
 
     
-    def get_gpu_info(self, widget):
-        gpus = getGPUs()
-        print(gpus)
-        gpu_info = []
-        for gpu in gpus:
-            gpu_info.append({
-                'id': gpu.id,
-                'name': gpu.name,
-                'uuid': gpu.uuid,
-                'load': gpu.load,
-                'memory.total': gpu.memoryTotal,
-                'memory.used': gpu.memoryUsed,
-                'memory.free': gpu.memoryFree,
-                'driver': gpu.driver,
-                'temperature': gpu.temperature,
-                'compute': gpu.computeCapability,
-                'fan.speed': gpu.fanSpeed,
-                'display_mode': gpu.display_mode,
-                'display_active': gpu.display_active,
-            })
-            print(f"GPU {gpu['id']}: {gpu['name']}")
-            print(f"    UUID: {gpu['uuid']}")
-            print(f"    Load: {gpu['load']} %")
-            print(f"    Memory Total: {gpu['memory.total']} MB")
-            print(f"    Memory Used: {gpu['memory.used']} MB")
-            print(f"    Memory Free: {gpu['memory.free']} MB")
-            print(f"    Driver: {gpu['driver']}")
-            print(f"    Temperature: {gpu['temperature']} °C")
-            print(f"    Compute Capability: {gpu['compute']}")
-            print(f"    Fan Speed: {gpu['fan.speed']} %")
-            print(f"    Display Mode: {gpu['display_mode']}")
-            print(f"    Display Active: {gpu['display_active']}")
+    async def update_gpu_info(self):
+        while True:
+            gpu_info = self.get_nvidia_gpu_info()
+            if gpu_info is not None:
+                id = gpu_info['id']
+                name = gpu_info['name']
+                load = gpu_info['load']
+                memory_total = gpu_info['memory_total']
+                memory_used = gpu_info['memory_used']
+                memory_free = gpu_info['memory_free']
+                driver = gpu_info['driver']
+                temperature = gpu_info['temperature']
+                display_active = gpu_info['display_active']
+
+                self.name_txt.text = f"GPU {id} : {name}"
+                self.load_txt.text = f"Load {load} %"
+                self.memory_total_txt.text = f"Memory Total : {memory_total} MB"
+                self.memory_used_txt.text = f"Memory Used : {memory_used} MB"
+                self.memory_free_txt.text = f"Memory Free : {memory_free} MB"
+                self.driver_txt.text = f"Driver : {driver}"
+                self.temperature_txt.text = f"Temperature : {temperature} °C"
+                self.display_active_txt.text = f"Display Active : {display_active}"
+            await asyncio.sleep(3)
 
 
     async def verify_address(self, input):
@@ -512,6 +544,26 @@ class MiningWindow(Box):
         self.mining_button.style.color = WHITE
         self.mining_button.style.background_color = RED
         self.mining_button.text = "Stop"
+
+    
+    def get_nvidia_gpu_info(self):
+        gpus = getGPUs()
+        if gpus:
+            gpu = gpus[0]
+            info = {
+                'id': gpu.id,
+                'name': gpu.name,
+                'load': gpu.load,
+                'memory_total': gpu.memoryTotal,
+                'memory_used': gpu.memoryUsed,
+                'memory_free': gpu.memoryFree,
+                'driver': gpu.driver,
+                'temperature': gpu.temperature,
+                'display_active': gpu.display_active,
+            }
+            return info
+        else:
+            return None
     
 
     def disable_closing_window(self, window):
@@ -519,5 +571,12 @@ class MiningWindow(Box):
 
 
         
-    def close_window(self, window):
+    async def close_window(self, window):
+        try:
+            tasks = [task for task in self.update_gpu_info_task if not task.done()]
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+        except asyncio.CancelledError:
+            pass
         self.app.exit()

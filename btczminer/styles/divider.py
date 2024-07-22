@@ -13,3 +13,10 @@ class DividerStyle():
         padding_top = 5,
         background_color = WHITE
     )
+
+    divider_params = Pack(
+        height = 300,
+        padding_top = 6,
+        padding_left = 10,
+        background_color = WHITE
+    )

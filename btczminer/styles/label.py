@@ -73,3 +73,12 @@ class LabelStyle():
         color = GREENYELLOW,
         background_color = BLACK
     )
+
+    gpu_info_txt = Pack(
+        font_size = 10,
+        color = WHITE,
+        background_color = BLACK,
+        padding_top = 17,
+        padding_left = 15,
+        font_weight = BOLD
+    )
